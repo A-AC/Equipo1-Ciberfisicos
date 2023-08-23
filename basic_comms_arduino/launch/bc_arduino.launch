@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+
+<launch>
+    <node pkg="basic_comms_arduino" type="listener.py" name="listener" output="screen"
+    launch-prefix="gnome-terminal --command" />
+
+</launch>
