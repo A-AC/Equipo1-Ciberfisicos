@@ -1,0 +1,14 @@
+<?xml version="1.0" ?>
+<launch>
+
+    <rosparam file = "$(find motor_challenge)/config/control_params.yaml" command = "load"  />
+
+
+    <node name="set_point_generator" pkg="motor_challenge" type="set_point_generator.py" output="screen" launch-prefix="gnome-terminal --command"/>
+    <node name="controller" pkg="motor_challenge" type="controller.py" output="screen" launch-prefix="gnome-terminal --command"/>
+    <node name="rqt_plot" pkg="rqt_plot" type="rqt_plot" output="screen"  args="/motor_output/data /motor_input/data /set_point/setpoint /error/data"/>
+    <node name="motor" pkg="rosserial_python" type="serial_node.py"> 
+    <param name="port"	type="string"	value="/dev/ttyACM0"/>
+    </node>
+
+</launch>
