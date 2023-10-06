@@ -36,7 +36,7 @@ if __name__ == '__main__':
     initialTime = rospy.get_time()
     while not rospy.is_shutdown():
         currentTime = rospy.get_time()
-        if currentTime-initialTime < timeToFinish:
+        if currentTime-initialTime <= timeToFinish:
             command.linear.x = linearVel
             command.angular.z = angularVel
         else:
