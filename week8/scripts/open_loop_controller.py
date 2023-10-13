@@ -14,8 +14,7 @@ def instruction_callback(msg):
     global timeToFinish
     linearVel = msg.linearVel
     angularVel = msg.angularVel
-    timeToFinish = msg.time
-    
+    timeToFinish = msg.time 
 
 def init_command():
     command.linear.x = 0.0
@@ -26,7 +25,7 @@ def init_command():
     command.angular.z = 0.0
 
 if __name__ == '__main__':
-    pub = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
+    pub = rospy.Publisher("/smoother_cmd_vel", Twist, queue_size=10)
     rospy.Subscriber("/pose", instructions, instruction_callback)
     rospy.init_node("open_loop_controller")
     rate = rospy.Rate(100)
