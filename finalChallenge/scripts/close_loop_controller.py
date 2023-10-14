@@ -5,8 +5,10 @@ from geometry_msgs.msg import Twist, Pose
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import numpy as np
 from nav_msgs.msg import Odometry
+from sensor_msgs.msg import Imu
 
 command = Twist()
+#imu_rec = Imu()
 poseRobot = Pose()
 points = rospy.get_param("/points")
 linear_vel_max = rospy.get_param("/linear_vel_max")
@@ -21,6 +23,9 @@ currentTime = 0.0
 prevTime = 0.0
 
 
+#def get_Imu(msg):
+#    global imu_rec
+#    imu_rec = msg
 
 def generate_poses():
     global points
@@ -149,12 +154,12 @@ def PID_Orientation(error):
     # P
     #Kp = rospy.get_param("Kp_Position", "No param found")
     #P = Kp*error
-    P = 0.1*error
+    P = 0.082*error
 
     # I
     superError2 += error * dt
     Ki = rospy.get_param("Ki_Position", "NO param found")
-    I = superError2*0.012
+    I = superError2*0.006
 
     # D
     #Kd = rospy.get_param("Kd_Position", "NO param found")
@@ -176,8 +181,9 @@ def init_command():
     command.angular.z = 0.0
 
 if __name__ == '__main__':
-    pub = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
-    rospy.Subscriber("/sim1/odom", Odometry, get_odometry)
+    pub = rospy.Publisher("/smoother_cmd_vel", Twist, queue_size=10)
+    rospy.Subscriber("/odom", Odometry, get_odometry)
+#    rospy.Subscriber("/imu", Imu, get_Imu)
     rospy.init_node("close_loop_controller")
     rate = rospy.Rate(100)
 
@@ -193,6 +199,7 @@ if __name__ == '__main__':
     while not rospy.is_shutdown():
         
         robot_position = poseRobot
+        #(x, y, robot_orientation) = euler_from_quaternion([imu_rec.orientation.x, imu_rec.orientation.y, imu_rec.orientation.z, imu_rec.orientation.w])
         (x, y, robot_orientation) = euler_from_quaternion([poseRobot.orientation.x, poseRobot.orientation.y, poseRobot.orientation.z, poseRobot.orientation.w])
         robot_orientation = wrap_to_system(robot_orientation)
 
@@ -247,7 +254,7 @@ if __name__ == '__main__':
             print("angle Error: ", angle_error)
             print("angular vel: ", angular_vel)
 
-            if np.abs(angle_error) < 0.0095:
+            if np.abs(angle_error) < 0.035:
                 print("DONE")
                 current_state = 3
                 command.linear.x = 0.0
@@ -287,7 +294,7 @@ if __name__ == '__main__':
             print("dist Error: ", dist_error)
             print("linear vel: ", linear_vel)
 
-            if np.abs(dist_error) < 0.05:
+            if np.abs(dist_error) < 0.03:
                 print("DONE")
                 if points_poses[current_point].orientation.z == "N":
                     current_state = 0
@@ -339,7 +346,7 @@ if __name__ == '__main__':
             print("angle Error: ", angle_error_adj)
             print("angular vel: ", angular_vel_adj)
 
-            if np.abs(angle_error_adj) < 0.0095:
+            if np.abs(angle_error_adj) < 0.035:
                 print("DONE")
                 current_state = 0
                 command.linear.x = 0.0

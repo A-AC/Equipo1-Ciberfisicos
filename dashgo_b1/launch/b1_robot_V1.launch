@@ -23,7 +23,7 @@
 
         <!--Initialise kinematic model -->
         <node pkg="dashgo_b1" type="nonholo_kinematic_sim.py" name="DashgoB1_Robot">
-        <remap from="/$(arg G1)/cmd_vel" to="/cmd_vel" />
+        <remap from="/$(arg G1)/cmd_vel" to="/smoother_cmd_vel" />
         </node>
 
         <!--Initialise localisation node -->
