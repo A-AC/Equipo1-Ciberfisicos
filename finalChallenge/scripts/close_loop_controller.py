@@ -2,6 +2,7 @@
 import rospy
 import tf_conversions
 from geometry_msgs.msg import Twist, Pose
+from std_msgs.msg import Int16
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import numpy as np
 from nav_msgs.msg import Odometry
@@ -21,11 +22,11 @@ superError1 = 0.0
 superError2 = 0.0
 currentTime = 0.0
 prevTime = 0.0
+arm_status = 0.0
 
-
-#def get_Imu(msg):
-#    global imu_rec
-#    imu_rec = msg
+def get_arm_status(msg):
+    global arm_status
+    arm_status = msg.data
 
 def generate_poses():
     global points
@@ -182,8 +183,9 @@ def init_command():
 
 if __name__ == '__main__':
     pub = rospy.Publisher("/smoother_cmd_vel", Twist, queue_size=10)
+    arm_pub = rospy.Publisher("/start_arm", Int16, queue_size=1)
     rospy.Subscriber("/odom", Odometry, get_odometry)
-#    rospy.Subscriber("/imu", Imu, get_Imu)
+    rospy.Subscriber("/done_arm", Int16, get_arm_status)
     rospy.init_node("close_loop_controller")
     rate = rospy.Rate(100)
 
@@ -213,6 +215,8 @@ if __name__ == '__main__':
             else:
                 current_point += 1
                 current_state = 1
+                superError1 = 0.0
+                superError2 = 0.0
             new_robot_orientation = robot_orientation
             
         
@@ -254,7 +258,7 @@ if __name__ == '__main__':
             print("angle Error: ", angle_error)
             print("angular vel: ", angular_vel)
 
-            if np.abs(angle_error) < 0.035:
+            if np.abs(angle_error) < 0.032:
                 print("DONE")
                 current_state = 3
                 command.linear.x = 0.0
@@ -346,18 +350,30 @@ if __name__ == '__main__':
             print("angle Error: ", angle_error_adj)
             print("angular vel: ", angular_vel_adj)
 
-            if np.abs(angle_error_adj) < 0.035:
+            if np.abs(angle_error_adj) < 0.032:
                 print("DONE")
-                current_state = 0
+                current_state = 7
                 command.linear.x = 0.0
                 command.angular.z = 0.0
                 prev_position = robot_position
+                arm_pub.publish(1)
                 #pub.publish(command) #DELETE AFTER TESTING
                 #x = input("NOW WHAT?") # DELETE AFTER TESTING
             else:
 
                 command.linear.x = 0.0
                 command.angular.z = angular_vel_adj
+
+        elif current_state == 7:
+
+            print("ARM ROUTINE")
+            if arm_status == 1.0:
+                print("WAITING")
+
+            elif arm_status == 2.0:
+                print("DONE ARM ROUTINE")
+                current_state = 0
+
 
         prevTime = currentTime
 
