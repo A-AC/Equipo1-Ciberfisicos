@@ -2,7 +2,7 @@
 import rospy
 import tf_conversions
 from geometry_msgs.msg import Twist, Pose
-from std_msgs.msg import Int16
+from std_msgs.msg import Int16, Float32
 from tf.transformations import euler_from_quaternion, quaternion_from_euler
 import numpy as np
 from nav_msgs.msg import Odometry
@@ -22,7 +22,7 @@ superError1 = 0.0
 superError2 = 0.0
 currentTime = 0.0
 prevTime = 0.0
-arm_status = 0.0
+arm_status = 0
 
 def get_arm_status(msg):
     global arm_status
@@ -39,7 +39,8 @@ def generate_poses():
         if x[2] == "N":
             poseA.orientation.z = "N"
         else:
-            poseA.orientation.z = x[2]*(np.pi/180.0)
+            poseA.orientation.z = x[2][0]*(np.pi/180.0)
+            poseA.orientation.x = x[2][1]
 
         print(poseA.orientation.z)
         pointsPoses.append(poseA)
@@ -153,17 +154,17 @@ def PID_Orientation(error):
     dt = currentTime-prevTime
     
     # P
-    #Kp = rospy.get_param("Kp_Position", "No param found")
+    #Kp = rospy.get_param("Kp_Orientation", "No param found")
     #P = Kp*error
     P = 0.082*error
 
     # I
     superError2 += error * dt
-    Ki = rospy.get_param("Ki_Position", "NO param found")
+    Ki = rospy.get_param("Ki_Orientation", "NO param found")
     I = superError2*0.006
 
     # D
-    #Kd = rospy.get_param("Kd_Position", "NO param found")
+    #Kd = rospy.get_param("Kd_Orientation", "NO param found")
     #D = Kd*((error-prevError)/dt)
     D = 0.0
 
@@ -184,6 +185,12 @@ def init_command():
 if __name__ == '__main__':
     pub = rospy.Publisher("/smoother_cmd_vel", Twist, queue_size=10)
     arm_pub = rospy.Publisher("/start_arm", Int16, queue_size=1)
+    # For Debug
+    position_error_pub = rospy.Publisher("/controller/posError", Float32, queue_size=10)
+    position_goal_pub = rospy.Publisher("/controller/posGoal", Float32, queue_size=10)
+    orientation_error_pub = rospy.Publisher("/controller/orientError", Float32, queue_size=10)
+    orientation_goal_pub = rospy.Publisher("/controller/orientGoal", Float32, queue_size=10)
+
     rospy.Subscriber("/odom", Odometry, get_odometry)
     rospy.Subscriber("/done_arm", Int16, get_arm_status)
     rospy.init_node("close_loop_controller")
@@ -197,6 +204,7 @@ if __name__ == '__main__':
     prev_position = Pose()
     angular_vel = 0.0
     prevTime = 0.0
+    arm_status = 0
 
     while not rospy.is_shutdown():
         
@@ -208,12 +216,19 @@ if __name__ == '__main__':
         currentTime = rospy.get_time()
         print("Current Point: ", current_point)
 
+        # publish errors and goals to see graphs
+        position_error_pub.publish(dist_error)
+        position_goal_pub.publish(dist_goal)
+        orientation_error_pub.publish(angle_error)
+        orientation_goal_pub.publish(angle_goal)
+
         if current_state == 0:
             print("NEXT POINT")
             if current_state >= len(points_poses):
                 print("DONE")
             else:
                 current_point += 1
+                arm_status = 0
                 current_state = 1
                 superError1 = 0.0
                 superError2 = 0.0
@@ -304,6 +319,7 @@ if __name__ == '__main__':
                     current_state = 0
                 else:
                     current_state = 5
+                    superError2 = 0.0
                     new_robot_orientation = robot_orientation
 
                 command.linear.x = 0.0
@@ -356,7 +372,7 @@ if __name__ == '__main__':
                 command.linear.x = 0.0
                 command.angular.z = 0.0
                 prev_position = robot_position
-                arm_pub.publish(1)
+                arm_pub.publish(points_poses[current_point].orientation.x)
                 #pub.publish(command) #DELETE AFTER TESTING
                 #x = input("NOW WHAT?") # DELETE AFTER TESTING
             else:
@@ -367,10 +383,10 @@ if __name__ == '__main__':
         elif current_state == 7:
 
             print("ARM ROUTINE")
-            if arm_status == 1.0:
+            if arm_status == 1:
                 print("WAITING")
 
-            elif arm_status == 2.0:
+            elif arm_status == 2:
                 print("DONE ARM ROUTINE")
                 current_state = 0
 
