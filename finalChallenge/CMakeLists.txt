@@ -164,6 +164,7 @@ include_directories(
 catkin_install_python(PROGRAMS
   scripts/close_loop_controller.py
   scripts/xarm.py
+  scripts/close_loop_controller_angle.py
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 

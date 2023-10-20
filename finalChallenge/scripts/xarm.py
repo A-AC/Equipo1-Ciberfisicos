@@ -94,6 +94,9 @@ if __name__ == '__main__':
             print(arm.get_servo_angle(), arm.get_servo_angle(is_radian=True))
 
             rospy.sleep(2)
+            #arm.set_tgpio_digital(0, 0)
+            #time.sleep(0.5)
+            #rospy.sleep(2)
 
             pub.publish(2)
 

@@ -187,8 +187,7 @@ def init_command():
     command.angular.z = 0.0
 
 if __name__ == '__main__':
-    pub = rospy.Publisher("/cmd_vel", Twist, queue_size=10)
-    pub_smoother = rospy.Publisher("/smoother_cmd_vel", Twist, queue_size=10)
+    pub = rospy.Publisher("/smoother_cmd_vel", Twist, queue_size=10)
     arm_pub = rospy.Publisher("/start_arm", Int16, queue_size=1)
     # For Debug
     position_error_pub = rospy.Publisher("/controller/posError", Float32, queue_size=10)
@@ -262,19 +261,7 @@ if __name__ == '__main__':
         elif current_state == 2:
             print("SETTING ANGLE")
             angle_error = angle_goal - robot_orientation
-            angular_vel = PID_Orientation(angle_error)
-
-            if np.abs(angular_vel) > angular_vel_max:
-                if angular_vel > 0:
-                    angular_vel = angular_vel_max
-                else:
-                    angular_vel = -1.0*angular_vel_max
-
-            if np.abs(angular_vel) < angular_vel_min:
-                if angular_vel > 0:
-                    angular_vel = angular_vel_min
-                else:
-                    angular_vel = -1.0*angular_vel_min
+            angular_vel = -1*angular_vel_min*10
 
             print("robot angle: ", robot_orientation)
             print("angle Goal: ", angle_goal)
@@ -370,7 +357,7 @@ if __name__ == '__main__':
             if np.abs(angle_error_adj) < 0.018:
                 print("DONE")
                 if points_poses[current_point].orientation.x == 0:
-                   current_state = 0
+                   current_state = 7
                 else:
                     current_state = 7
                 command.linear.x = 0.0
